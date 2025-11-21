@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>全幅 / APS-C 曝光模擬計算機</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    .app {
+      max-width: 960px;
+      margin: 24px auto;
+      padding: 16px;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.4);
+      border: 1px solid rgba(148,163,184,0.35);
+      backdrop-filter: blur(18px);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      letter-spacing: .03em;
+    }
+    .subtitle {
+      margin-bottom: 18px;
+      font-size: .9rem;
+      color: #9ca3af;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: .8rem;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    select, input {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.8);
+      color: #e5e7eb;
+      font-size: .9rem;
+      outline: none;
+    }
+    select:focus, input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.4);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .row > div {
+      flex: 1 1 160px;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: .95rem;
+      cursor: pointer;
+      background: linear-gradient(135deg,#38bdf8,#6366f1);
+      color: white;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+    button:hover { filter: brightness(1.06); }
+    button:active {
+      transform: translateY(1px);
+      filter: brightness(0.97);
+    }
+    .secondary-btn {
+      background: transparent;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: #e5e7eb;
+    }
+    .secondary-btn:hover {
+      background: rgba(15,23,42,0.8);
+    }
+    .results {
+      margin-top: 16px;
+      border-top: 1px dashed rgba(148,163,184,0.4);
+      padding-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      font-size: .9rem;
+    }
+    .result-block {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55,65,81,0.9);
+    }
+    .result-title {
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .result-main {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .result-sub {
+      color: #9ca3af;
+      font-size: .8rem;
+      line-height: 1.4;
+    }
+    .error {
+      color: #f97373;
+      font-size: .85rem;
+      margin-top: 6px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      font-size: .75rem;
+      color: #cbd5f5;
+    }
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+    @media (max-width: 640px) {
+      .card { padding: 16px; }
+      h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <h1>全幅 / APS-C 曝光模擬計算機</h1>
+    <div class="subtitle">
+      ✅ 光圈 / 快門 / ISO 任意留空：<b>留空的會被求解</b>（多個留空 → 自動推薦組合）。<br>
+      ✅ 額外顯示：手持安全快門（含防手震）、等效焦距 / 等效景深、景深範圍與超焦距。
+    </div>
+
+    <!-- EV & 感光元件 -->
+    <div class="grid">
+      <div>
+        <label for="scene">光線場景（EV 預設）</label>
+        <select id="scene">
+          <option value="custom">自訂 EV（下方輸入）</option>
+          <option value="15">晴天，陽光直射（EV 15）</option>
+          <option value="13">陰天明亮戶外（EV 13）</option>
+          <option value="10">室內明亮 / 大窗自然光（EV 10）</option>
+          <option value="8">一般室內燈光（EV 8）</option>
+          <option value="6">城市夜景商圈 / 霓虹街（EV 6）</option>
+          <option value="5">一般街燈夜景人像（EV 5）</option>
+          <option value="4">偏暗街道 / 公園（EV 4）</option>
+          <option value="3">極暗環境 / 僅一盞燈（EV 3）</option>
+          <option value="1">月光下場景（EV 1）</option>
+        </select>
+      </div>
+      <div>
+        <label for="evInput">EV（ISO100 基準，可自行修改）</label>
+        <input id="evInput" type="number" step="0.1" value="5" />
+      </div>
+      <div>
+        <label for="format">感光元件格式</label>
+        <select id="format">
+          <option value="full">全幅（Full Frame, 1.0×）</option>
+          <option value="aps15">APS-C 1.5×（Sony / Nikon 等）</option>
+          <option value="aps16">APS-C 1.6×（Canon RF-S / EF-S）</option>
+        </select>
+      </div>
+      <div>
+        <label>使用方式</label>
+        <div class="tag">
+          <span class="tag-dot"></span>
+          光圈 / 快門 / ISO 任一或多個留空，按「計算」就會自動推算。
+        </div>
+      </div>
+    </div>
+
+    <!-- 防手震參數 -->
+    <div class="grid">
+      <div>
+        <label for="lensIS">鏡頭防手震級數（例：RF 24-105 IS STM 約5級）</label>
+        <input id="lensIS" type="number" step="0.5" value="0" />
+      </div>
+      <div>
+        <label for="bodyIS">機身防手震級數</label>
+        <input id="bodyIS" type="number" step="0.5" value="0" />
+      </div>
+      <div>
+        <label>說明</label>
+        <div class="result-sub">
+          總防手震級數 = 鏡頭 IS + 機身 IBIS。理論值：每 1 級約慢 2 倍快門。
+        </div>
+      </div>
+    </div>
+
+    <!-- 曝光參數輸入 -->
+    <div class="grid">
+      <div>
+        <label for="focal">鏡頭焦距（mm）</label>
+        <input id="focal" type="number" step="0.1" placeholder="例如：35，用來算安全快門與等效焦距" />
+      </div>
+      <div>
+        <label for="aperture">光圈 F 值（例如 1.8，可留空）</label>
+        <input id="aperture" type="number" step="0.1" placeholder="留空 → 由程式推薦或求解" />
+      </div>
+      <div>
+        <label for="shutter">快門（秒，填小數，例如 0.01，可留空）</label>
+        <input id="shutter" type="number" step="0.0001" placeholder="留空 → 由程式推薦或求解" />
+      </div>
+      <div>
+        <label for="iso">ISO（可留空）</label>
+        <input id="iso" type="number" step="10" placeholder="留空 → 由程式推薦或求解" />
+      </div>
+      <div>
+        <label for="focusDist">對焦距離（公尺，例：2 = 2 公尺，可留空）</label>
+        <input id="focusDist" type="number" step="0.1" placeholder="用於計算景深與超焦距" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 10px;">
+      <div>
+        <button id="calcBtn">計算推薦參數</button>
+        <button id="resetBtn" class="secondary-btn" type="button">清除輸入</button>
+      </div>
+      <div class="tag">
+        <span class="tag-dot"></span> 提示：快門 0.01 = 1/100s，0.008 ≈ 1/125s
+      </div>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <!-- 結果 -->
+    <div class="results">
+      <div class="result-block">
+        <div class="result-title">計算結果（曝光參數）</div>
+        <div class="result-main" id="resultExposure">—</div>
+        <div class="result-sub" id="resultExposureSub">
+          這裡會顯示計算後的光圈 / 快門 / ISO 組合，以及對應的 EV。
+        </div>
+      </div>
+      <div class="result-block">
+        <div class="result-title">視角・等效焦距・等效景深</div>
+        <div class="result-main" id="resultFov">—</div>
+        <div class="result-sub" id="resultFovSub">
+          顯示裁切倍率、35mm 等效焦距，以及全幅 / APS-C 的等效景深關係。
+        </div>
+      </div>
+      <div class="result-block">
+        <div class="result-title">場景匹配・安全快門（含防手震）</div>
+        <div class="result-main" id="resultScene">—</div>
+        <div class="result-sub" id="resultSceneSub">
+          顯示目前設定與目標 EV 的差距，以及是否慢於手持安全快門。
+        </div>
+      </div>
+      <div class="result-block">
+        <div class="result-title">景深與超焦距</div>
+        <div class="result-main" id="resultDof">—</div>
+        <div class="result-sub" id="resultDofSub">
+          需填入焦距、光圈、對焦距離，系統會計算近 / 遠景深界限、景深長度與超焦距。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sceneSelect   = document.getElementById('scene');
+  const evInput       = document.getElementById('evInput');
+  const formatSelect  = document.getElementById('format');
+  const lensISInput   = document.getElementById('lensIS');
+  const bodyISInput   = document.getElementById('bodyIS');
+  const calcBtn       = document.getElementById('calcBtn');
+  const resetBtn      = document.getElementById('resetBtn');
+  const errorBox      = document.getElementById('error');
+
+  const resultExposure    = document.getElementById('resultExposure');
+  const resultExposureSub = document.getElementById('resultExposureSub');
+  const resultFov         = document.getElementById('resultFov');
+  const resultFovSub      = document.getElementById('resultFovSub');
+  const resultScene       = document.getElementById('resultScene');
+  const resultSceneSub    = document.getElementById('resultSceneSub');
+  const resultDof         = document.getElementById('resultDof');
+  const resultDofSub      = document.getElementById('resultDofSub');
+
+  function log2(x) {
+    return Math.log(x) / Math.log(2);
+  }
+
+  function formatShutter(t) {
+    if (!isFinite(t) || t <= 0) return '—';
+    if (t >= 1) {
+      return t.toFixed(2) + ' s';
+    } else {
+      const denom = Math.round(1 / t);
+      return '1/' + denom + ' s';
+    }
+  }
+
+  function formatAperture(n) {
+    if (!isFinite(n) || n <= 0) return '—';
+    return 'f/' + n.toFixed(1);
+  }
+
+  function cropFactor() {
+    const v = formatSelect.value;
+    if (v === 'aps15') return 1.5;
+    if (v === 'aps16') return 1.6;
+    return 1.0;
+  }
+
+  // CoC（mm）：簡化常用值
+  function coc() {
+    const v = formatSelect.value;
+    if (v === 'aps15') return 0.02;   // APS-C 1.5×
+    if (v === 'aps16') return 0.019;  // APS-C 1.6×
+    return 0.03;                      // 全幅
+  }
+
+  function totalStops() {
+    let l = parseFloat(lensISInput.value);
+    let b = parseFloat(bodyISInput.value);
+    if (!isFinite(l)) l = 0;
+    if (!isFinite(b)) b = 0;
+    return Math.max(0, l + b);
+  }
+
+  // 無防手震安全快門：1 / (焦距 × 裁切)
+  function safeShutterBase(focal, cf) {
+    if (!isFinite(focal) || focal <= 0) return null;
+    return 1 / (focal * cf);
+  }
+
+  // 含防手震：base × 2^(stops)
+  function safeShutterStab(focal, cf, stops) {
+    const base = safeShutterBase(focal, cf);
+    if (base === null) return null;
+    const factor = Math.pow(2, Math.max(0, stops));
+    return base * factor;
+  }
+
+  // 推薦光圈
+  function recommendedAperture(evScene) {
+    if (evScene >= 13) return 8.0;
+    if (evScene >= 10) return 4.0;
+    if (evScene >= 7)  return 2.8;
+    return 1.8;
+  }
+
+  // 推薦快門（無防抖基準）
+  function recommendedShutter(evScene, focal, cf) {
+    const baseSafe = safeShutterBase(focal, cf);
+    let t;
+    if (isFinite(baseSafe)) {
+      if (evScene >= 10) {
+        t = Math.min(baseSafe, 1/250);
+      } else if (evScene >= 6) {
+        t = baseSafe;
+      } else {
+        t = baseSafe * 1.0;
+      }
+    } else {
+      if (evScene >= 10) t = 1/250;
+      else if (evScene >= 6) t = 1/100;
+      else t = 1/60;
+    }
+    return t;
+  }
+
+  // 距離格式化（公尺）
+  function formatDist(m) {
+    if (!isFinite(m)) return '—';
+    if (m >= 100) return m.toFixed(0) + ' m';
+    if (m >= 10)  return m.toFixed(1) + ' m';
+    if (m >= 1)   return m.toFixed(2) + ' m';
+    return (m * 100).toFixed(0) + ' cm';
+  }
+
+  // EV 預設場景 → 同步 EV 輸入
+  sceneSelect.addEventListener('change', () => {
+    const val = sceneSelect.value;
+    if (val === 'custom') return;
+    evInput.value = val;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    document.getElementById('focal').value     = '';
+    document.getElementById('focusDist').value = '';
+    document.getElementById('aperture').value  = '';
+    document.getElementById('shutter').value   = '';
+    document.getElementById('iso').value       = '';
+    lensISInput.value = '0';
+    bodyISInput.value = '0';
+    errorBox.textContent = '';
+
+    resultExposure.textContent    = '—';
+    resultExposureSub.textContent = '這裡會顯示計算後的光圈 / 快門 / ISO 組合，以及對應的 EV。';
+    resultFov.textContent         = '—';
+    resultFovSub.textContent      = '顯示裁切倍率、35mm 等效焦距，以及全幅 / APS-C 的等效景深關係。';
+    resultScene.textContent       = '—';
+    resultSceneSub.textContent    = '顯示目前設定與目標 EV 的差距，以及是否慢於手持安全快門。';
+    resultDof.textContent         = '—';
+    resultDofSub.textContent      = '需填入焦距、光圈、對焦距離，系統會計算近 / 遠景深界限、景深長度與超焦距。';
+  });
+
+  calcBtn.addEventListener('click', () => {
+    errorBox.textContent = '';
+
+    const evScene = parseFloat(evInput.value);
+    if (!isFinite(evScene)) {
+      errorBox.textContent = '請輸入有效的 EV 值。';
+      return;
+    }
+
+    const focal     = parseFloat(document.getElementById('focal').value);
+    const focusDist = parseFloat(document.getElementById('focusDist').value); // m
+
+    let N   = parseFloat(document.getElementById('aperture').value);
+    let t   = parseFloat(document.getElementById('shutter').value);
+    let ISO = parseFloat(document.getElementById('iso').value);
+
+    const missingN   = !isFinite(N);
+    const missingT   = !isFinite(t);
+    const missingISO = !isFinite(ISO);
+    const missingCount = (missingN?1:0) + (missingT?1:0) + (missingISO?1:0);
+
+    const cf    = cropFactor();
+    const stops = totalStops();
+
+    // ==== 求解或推薦曝光參數 ====
+    if (missingCount === 3) {
+      N = recommendedAperture(evScene);
+      t = recommendedShutter(evScene, focal, cf);
+      const EV100 = log2((N*N)/t);
+      ISO = 100 * Math.pow(2, EV100 - evScene);
+    } else if (missingCount === 2) {
+      if (missingISO) {
+        if (missingN) N = recommendedAperture(evScene);
+        if (missingT) t = recommendedShutter(evScene, focal, cf);
+        const EV100 = log2((N*N)/t);
+        ISO = 100 * Math.pow(2, EV100 - evScene);
+      } else {
+        if (missingN && missingT) {
+          t = recommendedShutter(evScene, focal, cf);
+          const EV100_target = evScene + log2(ISO/100);
+          N = Math.sqrt(t * Math.pow(2, EV100_target));
+        } else if (missingN) {
+          const EV100_target = evScene + log2(ISO/100);
+          N = Math.sqrt(t * Math.pow(2, EV100_target));
+        } else if (missingT) {
+          const EV100_target = evScene + log2(ISO/100);
+          t = (N*N) / Math.pow(2, EV100_target);
+        }
+      }
+    } else if (missingCount === 1) {
+      if (missingISO) {
+        if (!isFinite(N) || !isFinite(t)) {
+          errorBox.textContent = '解 ISO 時，請先填入光圈與快門（或多留空讓系統推薦）。';
+          return;
+        }
+        const EV100 = log2((N*N)/t);
+        ISO = 100 * Math.pow(2, EV100 - evScene);
+      } else if (missingT) {
+        if (!isFinite(N) || !isFinite(ISO)) {
+          errorBox.textContent = '解快門時，請先填入光圈與 ISO（或多留空讓系統推薦）。';
+          return;
+        }
+        const EV100 = evScene + log2(ISO/100);
+        t = (N*N) / Math.pow(2, EV100);
+      } else if (missingN) {
+        if (!isFinite(t) || !isFinite(ISO)) {
+          errorBox.textContent = '解光圈時，請先填入快門與 ISO（或多留空讓系統推薦）。';
+          return;
+        }
+        const EV100 = evScene + log2(ISO/100);
+        N = Math.sqrt(t * Math.pow(2, EV100));
+      }
+    } else {
+      if (!isFinite(N) || !isFinite(t) || !isFinite(ISO)) {
+        errorBox.textContent = '請確認光圈 / 快門 / ISO 是否為有效數字。';
+        return;
+      }
+    }
+
+    // EV 計算
+    const EV100_final = log2((N*N)/t);
+    const EV_current  = EV100_final - log2(ISO / 100);
+
+    // ===== 曝光參數結果 =====
+    const exposureText =
+      `${formatAperture(N)} · ${formatShutter(t)} · ISO ${Math.round(ISO)}`;
+    resultExposure.textContent = exposureText;
+    resultExposureSub.textContent =
+      `對應 EV100 ≈ ${EV100_final.toFixed(2)}，在 ISO ${Math.round(ISO)} 下等效 EV ≈ ${EV_current.toFixed(2)}。` +
+      `（目標場景 EV：${evScene.toFixed(1)}）` +
+      (missingCount >= 2
+        ? '（本組合包含程式推薦值：優先兼顧手持安全快門與合理 ISO。）'
+        : '');
+
+    // ===== 視角與等效焦距 + 等效景深 =====
+    let fovTitle;
+    let fovText;
+    if (isFinite(focal)) {
+      const eqFocal = focal * cf;
+      fovTitle = `${focal.toFixed(1)} mm（裁切因子 ${cf.toFixed(2)}×）`;
+      fovText  = `實際焦距：${focal.toFixed(1)} mm；35mm 全幅等效焦距：約 ${eqFocal.toFixed(1)} mm。`;
+    } else {
+      fovTitle = '—';
+      fovText  = '請輸入焦距以顯示等效視角與安全快門。';
+    }
+
+    let dofEqText = '';
+    if (isFinite(N)) {
+      if (cf === 1.0) {
+        const eqAPS15 = N / 1.5;
+        const eqAPS16 = N / 1.6;
+        dofEqText =
+          `目前為全幅格式：此光圈 f/${N.toFixed(1)} 的景深，` +
+          `在 APS-C 1.5× 上約需 f/${eqAPS15.toFixed(1)}，` +
+          `在 APS-C 1.6× 上約需 f/${eqAPS16.toFixed(1)} 才有類似景深（同視角與構圖）。`;
+      } else if (cf > 1.0) {
+        const eqFF = N * cf;
+        dofEqText =
+          `目前為 APS-C 裁切 ${cf.toFixed(2)}×：此光圈 f/${N.toFixed(1)} 的景深，` +
+          `大約等同於全幅下的 f/${eqFF.toFixed(1)}（在相同視角與構圖條件下）。`;
+      }
+    }
+
+    resultFov.textContent = fovTitle;
+    resultFovSub.textContent = fovText + (dofEqText ? ' ' + dofEqText : '');
+
+    // ===== 場景匹配與安全快門（含防手震） =====
+    const deltaEV = EV_current - evScene;
+    let deltaText;
+    if (Math.abs(deltaEV) < 0.2) {
+      deltaText = '曝光與目標場景非常接近。';
+    } else if (deltaEV > 0) {
+      deltaText = '比目標 EV 稍微偏亮（約 ' + deltaEV.toFixed(2) + ' 級）。';
+    } else {
+      deltaText = '比目標 EV 稍微偏暗（約 ' + (-deltaEV).toFixed(2) + ' 級）。';
+    }
+
+    let sceneLabel = '';
+    const ev = evScene;
+    if (ev >= 14) sceneLabel = '接近日間晴天直射光。';
+    else if (ev >= 11) sceneLabel = '接近日間陰天或非常明亮的室內。';
+    else if (ev >= 8)  sceneLabel = '接近一般室內燈光環境。';
+    else if (ev >= 5)  sceneLabel = '接近城市夜景、街燈環境。';
+    else if (ev >= 3)  sceneLabel = '接近偏暗街道、公園或昏暗室內。';
+    else sceneLabel    = '非常暗的場景（例如月光、幾乎無燈光）。';
+
+    const baseSafe = safeShutterBase(focal, cf);
+    const stabSafe = safeShutterStab(focal, cf, stops);
+    let safeText = '';
+
+    if (baseSafe !== null) {
+      const useSafe = (stops > 0 && stabSafe !== null) ? stabSafe : baseSafe;
+      const isSlow  = t > useSafe * 1.1;
+
+      safeText =
+        `未防手震手持安全快門約為 ${formatShutter(baseSafe)}（規則：1 / (焦距 × 裁切倍數)）。`;
+      if (stops > 0 && stabSafe !== null) {
+        safeText += ` 考慮總防手震約 ${stops.toFixed(1)} 級，理論上可放慢到約 ${formatShutter(stabSafe)} 仍可能手持成功（實際還要看你的手穩與主體是否在動）。`;
+      }
+      safeText += isSlow
+        ? ` 目前的快門 ${formatShutter(t)} 比「含防手震」估計安全快門更慢，可能產生手震模糊，建議加快快門或提高 ISO。`
+        : ` 目前的快門 ${formatShutter(t)} 未慢於「含防手震」估計安全快門，一般手持成功率不錯。`;
+    }
+
+    resultScene.textContent = `等效 EV ≈ ${EV_current.toFixed(2)}`;
+    resultSceneSub.textContent = sceneLabel + ' ' + deltaText + (safeText ? ' ' + safeText : '');
+
+    // ===== 景深與超焦距 =====
+    if (isFinite(focal) && isFinite(N) && isFinite(focusDist) &&
+        focal > 0 && N > 0 && focusDist > 0) {
+      const f_mm  = focal;                // mm
+      const s_m   = focusDist;            // m
+      const s_mm  = s_m * 1000;           // mm
+      const c_mm  = coc();
+
+      // 超焦距 H（mm）
+      const H_mm = (f_mm * f_mm) / (N * c_mm) + f_mm;
+      const H_m  = H_mm / 1000;
+
+      // 近端 / 遠端
+      const numeratorNear = H_mm * s_mm;
+      const denomNear     = H_mm + (s_mm - f_mm);
+      const D_near_mm     = numeratorNear / denomNear;
+      const D_near_m      = D_near_mm / 1000;
+
+      let D_far_m;
+      let dofText;
+      if (s_mm >= H_mm) {
+        // 對焦距離 >= 超焦距 → 遠端約為無限遠
+        D_far_m = Infinity;
+        dofText =
+          `近景深界限約在 ${formatDist(D_near_m)}，遠景深界限延伸至無限遠。` +
+          ` 目前對焦距離已達或超過超焦距，從約 ${formatDist(D_near_m)} 到無限遠都在可接受清晰範圍內。`;
+      } else {
+        const numeratorFar = H_mm * s_mm;
+        const denomFar     = H_mm - (s_mm - f_mm);
+        const D_far_mm     = numeratorFar / denomFar;
+        D_far_m            = D_far_mm / 1000;
+        const DOF_m        = D_far_m - D_near_m;
+        dofText =
+          `近景深界限：約 ${formatDist(D_near_m)}；遠景深界限：約 ${formatDist(D_far_m)}。` +
+          ` 景深長度：約 ${formatDist(DOF_m)}（以對焦距離約 ${formatDist(s_m)} 為中心）。`;
+      }
+
+      resultDof.textContent =
+        isFinite(D_far_m)
+          ? `景深：約 ${formatDist(D_far_m - D_near_m)}`
+          : `景深：從 ${formatDist(D_near_m)} 到無限遠`;
+      resultDofSub.textContent =
+        `超焦距約為 ${formatDist(H_m)}。` + ' ' + dofText;
+    } else {
+      resultDof.textContent  = '—';
+      resultDofSub.textContent =
+        '要計算景深與超焦距，請至少輸入：焦距（mm）、光圈值，以及對焦距離（公尺）。' +
+        ' 然後再按一次「計算」。';
+    }
+  });
+</script>
+</body>
+</html>
